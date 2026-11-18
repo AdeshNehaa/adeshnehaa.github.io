@@ -1,6 +1,11 @@
 # Builds the site and publishes it to GitHub Pages.
 # Runs when you push to the `main` branch, or when started by hand from the Actions tab.
 # One-time setup: repository Settings → Pages → Source → "GitHub Actions".
+#
+# Security notes
+#   - Each job gets only the permissions it needs.
+#   - Every action is pinned to an exact commit, so a changed tag cannot alter what runs here.
+#   - Packages are installed exactly as recorded in package-lock.json, with install scripts off.
 name: Deploy to GitHub Pages
 
 on:
@@ -8,10 +13,8 @@ on:
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+# No permissions by default; each job asks for its own below.
+permissions: {}
 
 # Only one deployment at a time; a newer push replaces a queued one.
 concurrency:
@@ -21,22 +24,28 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read # read the code
+      pages: read # read the site's address
     steps:
       - name: Check out the code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
 
       - name: Read the GitHub Pages address
         id: pages
-        uses: actions/configure-pages@v6
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Build
         run: npm run build
@@ -47,17 +56,21 @@ jobs:
           SITE_URL: ${{ steps.pages.outputs.base_url }}/
 
       - name: Upload the built site
-        uses: actions/upload-pages-artifact@v5
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: dist
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write # publish the site
+      id-token: write # prove to GitHub Pages that this workflow is the publisher
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

@@ -149,6 +149,21 @@ Colours, fonts and spacing are defined once at the top of [`src/styles/global.cs
 
 ---
 
+## Security
+
+The site has no server, database, login or form, so there is nothing to break into or steal. What is in place:
+
+- **HTTPS only.** GitHub Pages serves the site over an encrypted connection and refuses plain HTTP.
+- **Content security policy.** The published page tells the browser exactly where it may load things from: this site, Google Fonts and the YouTube player. Anything else is refused. The policy is in [`vite.config.js`](vite.config.js); allow a new outside service there before using it.
+- **Nothing from other companies loads by itself** except the fonts. YouTube is contacted only when a guest plays the song, through its privacy-enhanced address.
+- **Hidden from search engines.** The page asks search engines not to list it, so it is found by link, not by searching names. Remove the `robots` line in [`index.html`](index.html) to change that.
+- **Protected repository.** History on `main` cannot be rewritten or deleted, only GitHub's own actions may run, and GitHub watches for leaked passwords and vulnerable packages.
+- **Careful deployment.** Each step of the workflow has only the permissions it needs, actions are pinned to exact versions, and packages are installed exactly as recorded with install scripts off.
+
+What this cannot do: the invitation is a public page. Anyone who has the link can open it, and the repository is public too. Do not put anything in it that guests should not see.
+
+The most important protection is on your GitHub account: switch on **two-factor authentication** (GitHub → Settings → Password and authentication). Whoever controls the account controls the site.
+
 ## Publishing
 
 See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for the step-by-step guide to GitHub Pages.

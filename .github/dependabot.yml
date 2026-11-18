@@ -1,0 +1,13 @@
+# Dependabot opens a pull request when one of the pinned GitHub Actions or an npm package
+# has a newer version, so the pins above do not go stale.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
