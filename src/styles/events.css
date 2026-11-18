@@ -1,0 +1,554 @@
+/* ═══════════════════════════════════════════════════════════════
+   Events — one invitation card per event (Haldi, Wedding, Puja…)
+   Block: .events · markup in src/sections/Events.jsx
+
+   Every card is the same five rows:
+     1 header  coloured band with the titles (and the muhurat line)
+     2 when    date seal, straddling the scalloped edge of the band
+     3 desc    one-line welcome
+     4 details date · time · venue · dress code
+     5 footer  "Add to Calendar"
+   The theme modifier only changes the custom properties below and
+   which artwork is drawn, so the two cards stay obvious siblings.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ───────── Grid ───────── */
+.events__grid {
+  --ev-gap: clamp(1.75rem, 1.1rem + 2.6vw, 3rem);
+  list-style: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--ev-gap);
+  max-width: 34rem; /* stacked: keep the cards at invitation width */
+  margin: 0 auto;
+  padding: 0;
+}
+.events__item { min-width: 0; }
+
+/* ───────── Card shell + theme tokens (regal default: maroon & gold) ───────── */
+.events__card {
+  --ev-ring: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 28%, var(--gold-deep) 50%, var(--gold) 72%, var(--gold-light) 100%);
+  --ev-band: radial-gradient(130% 115% at 50% -14%, var(--maroon-soft) 0%, var(--maroon) 34%, var(--maroon-deep) 100%);
+  --ev-body: var(--ivory);
+  --ev-body-top: var(--ivory);
+  --ev-rim: var(--gold);
+  --ev-native: var(--gold-light);
+  --ev-title: var(--ivory);
+  --ev-accent: var(--gold-light);
+  --ev-hairline: rgba(201, 164, 92, 0.62);
+  --ev-rule: rgba(201, 164, 92, 0.6);
+  --ev-icon: var(--gold-deep);
+  --ev-note-edge: rgba(168, 130, 58, 0.8);
+  --ev-note-bg: rgba(201, 164, 92, 0.09);
+  --ev-disc: radial-gradient(circle at 50% 24%, var(--maroon) 0%, var(--maroon-deep) 78%);
+  --ev-disc-ink: var(--ivory);
+  --ev-disc-small: var(--gold-light);
+  --ev-disc-edge: var(--gold);
+  --ev-disc-dash: rgba(230, 207, 152, 0.6);
+  --ev-disc-gap: var(--ivory);
+
+  --ev-seal: clamp(10.25rem, 8.6rem + 7vw, 12.5rem); /* halo box; the disc is 66% of it */
+  --ev-pad: clamp(1.15rem, 0.5rem + 3.2vw, 2.4rem);
+  --ev-crest: clamp(4.25rem, 3.7rem + 2.2vw, 5rem);
+
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  padding: 3px; /* the gold ring shows through this gap */
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.55s var(--ease);
+}
+
+/* Haldi: the one place yellow and marigold take over */
+.events__card--haldi {
+  --ev-ring: linear-gradient(135deg, var(--haldi) 0%, var(--marigold) 30%, var(--gold-light) 50%, var(--marigold) 70%, var(--haldi) 100%);
+  --ev-band: linear-gradient(180deg, var(--haldi-soft) 0%, var(--haldi) 90%);
+  --ev-body: linear-gradient(180deg, var(--haldi-soft) 0%, var(--haldi-soft) 55%, var(--ivory) 100%);
+  --ev-body-top: var(--haldi-soft);
+  --ev-rim: var(--marigold);
+  --ev-native: var(--maroon);
+  --ev-title: var(--maroon-deep);
+  --ev-accent: var(--maroon-deep);
+  --ev-hairline: rgba(122, 31, 43, 0.24);
+  --ev-rule: rgba(242, 140, 15, 0.65);
+  --ev-icon: var(--marigold);
+  --ev-note-edge: rgba(242, 140, 15, 0.9);
+  --ev-note-bg: rgba(242, 183, 5, 0.12);
+  --ev-disc: radial-gradient(circle at 50% 26%, var(--ivory) 0%, var(--haldi-soft) 56%, var(--haldi) 145%);
+  --ev-disc-ink: var(--maroon-deep);
+  --ev-disc-small: var(--maroon-deep);
+  --ev-disc-edge: var(--marigold);
+  --ev-disc-dash: rgba(122, 31, 43, 0.4);
+  --ev-disc-gap: var(--haldi-soft);
+}
+
+/* Puja: champagne gold, for the ceremonies around the wedding */
+.events__card--puja {
+  --ev-band: radial-gradient(130% 115% at 50% -14%, #f6e9c4 0%, var(--gold-light) 40%, var(--gold) 100%);
+  --ev-rim: var(--gold-deep);
+  --ev-native: var(--maroon-deep);
+  --ev-title: var(--maroon-deep);
+  --ev-accent: var(--maroon-deep);
+  --ev-hairline: rgba(122, 31, 43, 0.3);
+  --ev-disc: radial-gradient(circle at 50% 24%, var(--ivory) 0%, var(--cream) 72%, var(--cream-deep) 135%);
+  --ev-disc-ink: var(--maroon-deep);
+  --ev-disc-small: var(--maroon);
+  --ev-disc-edge: var(--gold-deep);
+  --ev-disc-dash: rgba(122, 31, 43, 0.38);
+}
+
+/* Hover / keyboard-focus lift. The deeper shadow is its own layer so only
+   transform and opacity ever animate. */
+.events__card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  box-shadow: 0 38px 60px -28px rgba(90, 19, 32, 0.6);
+  opacity: 0;
+  transition: opacity 0.55s var(--ease);
+}
+@media (hover: hover) and (pointer: fine) {
+  .events__card:hover { transform: translateY(-8px); }
+  .events__card:hover::before { opacity: 1; }
+}
+.events__card:has(:focus-visible) { transform: translateY(-8px); }
+.events__card:has(:focus-visible)::before { opacity: 1; }
+
+/* Gold ring with a soft travelling sheen (only the 3px ring is ever visible) */
+.events__ring {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: var(--ev-ring);
+  overflow: hidden;
+  isolation: isolate; /* keeps the moving sheen clipped to the rounded corners in Safari */
+}
+.events__ring::after {
+  content: '';
+  position: absolute;
+  top: -10%;
+  bottom: -10%;
+  left: 0;
+  width: 42%;
+  background: linear-gradient(90deg, rgba(253, 248, 239, 0) 0%, rgba(253, 248, 239, 0.95) 50%, rgba(253, 248, 239, 0) 100%);
+  opacity: 0;
+  transform: translate3d(-140%, 0, 0) skewX(-16deg);
+  animation: events-sheen 8s ease-in-out infinite;
+  animation-play-state: paused;
+}
+.events__item:nth-child(even) .events__ring::after { animation-delay: -4s; }
+
+/* ───────── Panel ───────── */
+.events__panel.frame {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  isolation: isolate; /* keeps the animated artwork clipped to the rounded corners in Safari */
+  border: 0;
+  border-radius: calc(var(--radius-lg) - 3px);
+  box-shadow: none;
+  background: var(--ev-body);
+}
+/* layers inside the panel: band 0 · hairline 1 · drifting marigolds 2 · content 3 · toran and corners 4 */
+.events__panel.frame::before { z-index: 1; border-color: var(--ev-hairline); }
+
+/* ───────── Row 1 · band ───────── */
+.events__header {
+  position: relative;
+  z-index: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--ev-crest) var(--ev-pad) calc(var(--ev-seal) / 2 + 1rem);
+  background: var(--ev-band);
+  text-align: center;
+}
+/* scalloped lower edge, like the valance of a shamiana */
+.events__header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.5px;
+  height: 13px;
+  background:
+    radial-gradient(circle at 50% 100%, var(--ev-body-top) 10.4px, var(--ev-rim) 11px, var(--ev-rim) 12.2px, transparent 12.8px)
+    center bottom / 26px 13px repeat-x;
+}
+
+.events__native {
+  margin: 0;
+  font-size: clamp(2.2rem, 1.8rem + 1.9vw, 2.9rem);
+  line-height: 1.3;
+  color: var(--ev-native);
+}
+.events__name {
+  margin-top: 0.15rem;
+  padding-left: 0.16em; /* balances the trailing letter-space so the line stays optically centred */
+  font-size: clamp(1.02rem, 0.9rem + 0.6vw, 1.3rem);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ev-title);
+}
+
+.events__muhurat,
+.events__flourish {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  min-height: 1.75rem;
+  margin: 0.55rem 0 0;
+}
+.events__muhurat {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ev-accent);
+}
+.events__muhurat > span { padding-left: 0.2em; }
+.events__muhurat::before,
+.events__muhurat::after,
+.events__flourish::before,
+.events__flourish::after {
+  content: '';
+  flex: none;
+  width: 1.75rem;
+  height: 1px;
+  background: var(--ev-accent);
+  opacity: 0.6;
+}
+.events__flourish--plain::before,
+.events__flourish--plain::after { content: none; }
+.events__flourish--plain svg { display: block; max-width: 100%; height: auto; }
+
+/* Artwork — haldi: marigold toran along the top, marigolds drifting in the corners */
+.events__card .events__garland {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 4;
+  width: 100%;
+  height: calc(var(--ev-crest) - 0.6rem);
+}
+.events__bud {
+  position: absolute;
+  z-index: 2;
+  animation: events-drift 9s ease-in-out infinite alternate;
+  animation-play-state: paused;
+  will-change: transform;
+}
+.events__bud--left { left: -24px; bottom: -26px; }
+.events__bud--right { right: -18px; bottom: -20px; animation-duration: 12s; animation-delay: -5s; }
+
+/* Artwork — wedding: lotus crest and gold corner flourishes */
+.events__lotus {
+  position: absolute;
+  top: calc(var(--ev-crest) - 3.3rem);
+  left: 0;
+  right: 0;
+  margin-inline: auto;
+}
+.events__corner { position: absolute; z-index: 4; }
+.events__corner--tl { top: 13px; left: 13px; }
+.events__corner--tr { top: 13px; right: 13px; }
+.events__corner--bl { bottom: 13px; left: 13px; }
+.events__corner--br { bottom: 13px; right: 13px; }
+
+/* ───────── Row 2 · date seal ───────── */
+.events__when {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  justify-content: center;
+  margin-top: calc(var(--ev-seal) / -2);
+}
+.events__seal {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--ev-seal);
+  height: var(--ev-seal);
+  opacity: 0;
+  transform: scale(0.82);
+  transition: opacity 0.8s var(--ease), transform 1s var(--ease);
+  transition-delay: calc(var(--reveal-delay, 0ms) + 280ms);
+}
+.events__item.is-visible .events__seal { opacity: 1; transform: none; }
+
+.events__halo { position: absolute; inset: 0; }
+.events__halo > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  animation: events-spin 90s linear infinite;
+  animation-play-state: paused;
+  will-change: transform;
+}
+.events__card--wedding .events__halo > svg {
+  inset: -4%;
+  width: 108%;
+  height: 108%;
+  animation-duration: 140s;
+  animation-direction: reverse;
+}
+
+.events__disc {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 66%;
+  height: 66%;
+  border: 2px solid var(--ev-disc-edge);
+  border-radius: 50%;
+  background: var(--ev-disc);
+  box-shadow: 0 0 0 4px var(--ev-disc-gap), 0 14px 24px -10px rgba(90, 19, 32, 0.55);
+  color: var(--ev-disc-ink);
+  font-family: var(--font-display);
+  line-height: 1;
+}
+.events__disc::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 1px dashed var(--ev-disc-dash);
+  border-radius: 50%;
+}
+.events__seal-small {
+  padding-left: 0.14em;
+  font-size: max(0.7rem, calc(var(--ev-seal) * 0.062));
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ev-disc-small);
+}
+.events__seal-day {
+  margin: 0.12em 0 0.14em;
+  font-size: calc(var(--ev-seal) * 0.235);
+  line-height: 0.82;
+  letter-spacing: 0.03em;
+}
+
+/* ───────── Row 3 · description ───────── */
+.events__desc {
+  position: relative;
+  z-index: 3;
+  margin: 0;
+  padding: 1.1rem var(--ev-pad) 0;
+  font-size: 1.04em;
+  font-style: italic;
+  line-height: 1.55;
+  text-align: center;
+  text-wrap: balance;
+  color: var(--ink-soft);
+}
+
+/* ───────── Row 4 · details (a printed-programme ledger with dotted leaders) ───────── */
+.events__details {
+  position: relative;
+  z-index: 3;
+  margin: 1.15rem var(--ev-pad) 0;
+  padding: 0.3rem 0;
+  border-top: 1px solid var(--ev-rule);
+  border-bottom: 1px solid var(--ev-rule);
+}
+.events__row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 0;
+}
+.events__row dt {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--maroon);
+}
+.events__row dt::after {
+  content: '';
+  flex: 1 1 1.25rem;
+  min-width: 1.25rem;
+  border-bottom: 1px dotted var(--gold-deep);
+  opacity: 0.75;
+}
+.events__icon { flex: none; align-self: center; color: var(--ev-icon); }
+.events__row dd {
+  flex: 0 1 auto;
+  max-width: 72%;
+  margin: 0;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  text-align: right;
+  color: var(--ink);
+}
+.events__venue-link {
+  padding-block: 0.8rem; /* inline padding: a 44px+ tap target that leaves the line height alone */
+  color: inherit;
+  text-decoration: underline dotted var(--gold-deep);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.24em;
+}
+.events__venue-link:hover { color: var(--maroon); text-decoration-style: solid; }
+/* the focus ring hugs the words rather than the tall tap area */
+.events__venue-link:focus-visible { outline: none; }
+.events__venue-link:focus-visible .events__venue-name {
+  border-radius: 4px;
+  outline: 2px solid var(--maroon);
+  outline-offset: 4px;
+}
+
+/* a second, smaller line in Marathi under a value (e.g. स्नेह भोजन under the lunch time) */
+.events__row-native { display: block; margin-top: 0.1rem; font-size: 0.86em; color: var(--ink-soft); }
+
+/* dress code given as lines: a small caps "Men" / "Women" label before each */
+.events__dress-line { display: block; }
+.events__dress-line + .events__dress-line { margin-top: 0.3rem; }
+.events__dress-who {
+  margin-right: 0.5em;
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--maroon);
+}
+
+/* dress code still to come: a clearly marked, but gracious, "to be announced" note */
+.events__row--pending {
+  display: block;
+  margin: 0.5rem 0 0.45rem;
+  padding: 0.7rem 0.9rem 0.75rem;
+  border: 1px dashed var(--ev-note-edge);
+  border-radius: 14px;
+  background: var(--ev-note-bg);
+  text-align: center;
+}
+.events__row--pending dt {
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem 0.5rem;
+  white-space: normal;
+}
+.events__row--pending dt::after { content: none; }
+.events__row--pending dd { max-width: none; margin-top: 0.35rem; text-align: center; text-wrap: balance; }
+.events__tba {
+  padding: 0.22rem 0.6rem 0.2rem 0.74rem;
+  border-radius: 999px;
+  background: var(--maroon);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  line-height: 1.2;
+  color: var(--ivory);
+}
+/* the shared placeholder style, at full strength so it stays readable on the tinted surfaces;
+   inside the coloured band it also takes the band's own text colour */
+.events__card .placeholder-text { opacity: 1; }
+.events__header .placeholder-text { color: inherit; }
+
+/* ───────── Row 5 · action ───────── */
+.events__footer {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  justify-content: center;
+  padding: 1.4rem var(--ev-pad) calc(var(--ev-pad) + 0.5rem);
+}
+.btn.events__cta--haldi {
+  border-color: var(--marigold);
+  background: linear-gradient(135deg, var(--haldi) 0%, var(--marigold) 100%);
+  box-shadow: 0 12px 26px -14px rgba(242, 140, 15, 0.9);
+  color: var(--maroon-deep);
+}
+
+/* ───────── Ambient motion (rests while the section is off screen) ───────── */
+.events--live .events__ring::after,
+.events--live .events__halo > svg,
+.events--live .events__bud { animation-play-state: running; }
+
+/* rests for most of the cycle, then one unhurried pass across the card */
+@keyframes events-sheen {
+  0%, 55% { transform: translate3d(-140%, 0, 0) skewX(-16deg); opacity: 0; }
+  60%, 95% { opacity: 1; }
+  100% { transform: translate3d(340%, 0, 0) skewX(-16deg); opacity: 0; }
+}
+@keyframes events-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes events-drift {
+  from { transform: translate3d(0, 0, 0) rotate(-10deg); }
+  to { transform: translate3d(5px, -9px, 0) rotate(12deg); }
+}
+
+/* ───────── Phones ───────── */
+@media (max-width: 479px) {
+  .events__corner--bl,
+  .events__corner--br { width: 40px; height: 40px; }
+}
+@media (max-width: 379px) {
+  /* keep the muhurat on one line: no side rules, slightly tighter tracking */
+  .events__muhurat { letter-spacing: 0.14em; }
+  .events__muhurat > span { padding-left: 0.14em; }
+  .events__muhurat::before,
+  .events__muhurat::after { content: none; }
+  .events__row:not(.events__row--pending) { flex-direction: column; align-items: center; gap: 0.1rem; padding: 0.55rem 0; }
+  .events__row:not(.events__row--pending) dt { flex: none; }
+  .events__row:not(.events__row--pending) dt::after { content: none; }
+  .events__row:not(.events__row--pending) dd { max-width: none; text-align: center; }
+  .events__bud--left { width: 62px; height: 62px; }
+  .events__bud--right { width: 50px; height: 50px; }
+  .events__corner--bl,
+  .events__corner--br { display: none; }
+}
+
+/* ───────── Two equal-height columns ───────── */
+@media (min-width: 900px) {
+  .events__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 66rem; }
+  .events__item { display: flex; }
+  .events__card { flex: 1; }
+  .events__desc { flex: 1 0 auto; } /* spare height sits under the description… */
+  .events__footer { margin-top: auto; } /* …or above the button when there is none */
+  .events__item:last-child:nth-child(odd) { grid-column: 1 / -1; justify-self: center; width: min(100%, 34rem); }
+
+  /* Where subgrid is available the five rows of both cards share one set of
+     tracks, so titles, seals, details and buttons line up exactly. */
+  @supports (grid-template-rows: subgrid) {
+    .events__grid { row-gap: 0; }
+    .events__item,
+    .events__card,
+    .events__panel.frame { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: subgrid; }
+    .events__item { grid-row: span 5; }
+    .events__item:nth-child(n + 3) { margin-top: var(--ev-gap); }
+    .events__card,
+    .events__panel.frame { grid-row: 1 / -1; }
+    .events__header { grid-row: 1; }
+    .events__when { grid-row: 2; }
+    .events__desc { grid-row: 3; }
+    .events__details { grid-row: 4; }
+    .events__footer { grid-row: 5; }
+  }
+}
+
+/* ───────── Reduced motion: no lift, nothing waits for an entrance ───────── */
+@media (prefers-reduced-motion: reduce) {
+  .events__card:hover { transform: none; }
+  .events__card:has(:focus-visible) { transform: none; }
+  .events__item .events__seal { opacity: 1; transform: none; }
+}

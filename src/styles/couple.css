@@ -1,0 +1,236 @@
+/* ═════════ Couple (#couple) — see src/sections/Couple.jsx ═════════
+   Two portraits in cusped mehrab arches with a gold beaded frame,
+   joined by a lotus-and-ampersand clasp, then a short introduction.   */
+
+.couple { overflow: hidden; /* the portraits slide in from the sides */ }
+
+.couple__defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* ───────── The pair ─────────
+   Portraits and captions are direct grid items (the <figure>s use
+   display: contents) so the clasp can centre itself on the portrait row. */
+.couple__pair {
+  --couple-col: min(43vw, 14.5rem); /* approximate width of one column */
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas:
+    'groom-art bride-art'
+    'groom-text bride-text';
+  gap: clamp(0.5rem, 2.4vw, 0.9rem) clamp(0.75rem, 3.6vw, 1.5rem);
+  max-width: 31rem;
+  margin-inline: auto;
+}
+.couple__person { display: contents; margin: 0; }
+.couple__portrait--groom { grid-area: groom-art; }
+.couple__portrait--bride { grid-area: bride-art; }
+.couple__caption--groom { grid-area: groom-text; }
+.couple__caption--bride { grid-area: bride-text; }
+
+/* ───────── Portrait in its arch ───────── */
+.couple__portrait {
+  position: relative;
+  width: 100%;
+  filter: drop-shadow(0 12px 18px rgba(90, 19, 32, 0.17));
+}
+.couple__portrait::before { content: ''; display: block; padding-top: 137.5%; /* 320 : 440 */ }
+
+/* clipped to the arch by an inline clip-path: url(#couple-arch-clip) */
+.couple__window {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(180deg, var(--cream) 0%, var(--cream-deep) 100%); /* seen while a photo loads */
+}
+.couple__arch {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.couple__photo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 22%;
+}
+
+.couple .couple__flowers {
+  position: absolute;
+  bottom: -4.5%;
+  width: 41%;
+  height: auto;
+}
+.couple__portrait--groom .couple__flowers { left: -10%; }
+.couple__portrait--bride .couple__flowers { right: -10%; }
+
+/* Placeholder shown until a photo is set in the config */
+.couple__placeholder {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(ellipse 70% 42% at 50% 40%, rgba(253, 248, 239, 0.95), rgba(253, 248, 239, 0) 100%),
+    linear-gradient(180deg, var(--cream) 0%, var(--cream-deep) 100%);
+}
+.couple__portrait--bride .couple__placeholder {
+  background:
+    radial-gradient(ellipse 70% 42% at 50% 40%, rgba(253, 248, 239, 0.95), rgba(253, 248, 239, 0) 100%),
+    linear-gradient(180deg, var(--cream) 0%, rgba(232, 191, 179, 0.6) 100%),
+    var(--cream);
+}
+.couple .couple__placeholder-mandala {
+  position: absolute;
+  left: 9%;
+  top: 22%;
+  width: 82%;
+  height: auto;
+  opacity: 0.6;
+}
+.couple .couple__initial {
+  position: relative;
+  margin-top: -6%;
+  font-size: clamp(3.5rem, 17vw, 7.25rem);
+  line-height: 1;
+}
+.couple .couple__placeholder-label {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: 11%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  font-size: clamp(0.8rem, 0.72rem + 0.4vw, 0.95rem);
+  line-height: 1.2;
+  text-align: center;
+  color: var(--ink-soft);
+  opacity: 1;
+}
+.couple__placeholder-label svg { color: var(--gold-deep); }
+
+/* ───────── Name + role ───────── */
+.couple__caption { text-align: center; }
+.couple .couple__name {
+  margin: 0;
+  /* never wider than its column (--couple-name-em estimates the longer name's width) */
+  font-size: min(clamp(2.6rem, 1.9rem + 3.6vw, 4.25rem), calc(var(--couple-col) / var(--couple-name-em, 3)));
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.couple__role {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(0.72rem, 0.66rem + 0.3vw, 0.9rem);
+  letter-spacing: 0.3em;
+  text-indent: 0.3em; /* optically re-centre letter-spaced text */
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* ───────── The clasp between the two ───────── */
+.couple__joiner {
+  grid-row: 1;
+  grid-column: 1 / -1;
+  place-self: center;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 18%;
+}
+.couple .couple__joiner-lotus,
+.couple__joiner-drop { display: none; }
+
+.couple__amp {
+  display: grid;
+  place-items: center;
+  width: 2.9rem;
+  height: 2.9rem;
+  border-radius: 50%;
+  background: var(--ivory);
+  border: 1px solid var(--gold-deep);
+  box-shadow: 0 0 0 3px var(--ivory), 0 0 0 4px var(--gold), 0 8px 18px -6px rgba(90, 19, 32, 0.45);
+}
+.couple .couple__amp-glyph { font-size: 1.7rem; line-height: 1; transform: translateY(0.04em); }
+
+/* ───────── Introduction ───────── */
+.couple__intro {
+  margin-top: clamp(2.25rem, 1.6rem + 3vw, 4rem);
+  text-align: center;
+}
+.couple .couple__intro-text { margin-bottom: 0; text-wrap: pretty; }
+.couple__hashtag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin: var(--space-5) 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 0.9rem + 0.5vw, 1.3rem);
+  letter-spacing: 0.08em;
+  color: var(--maroon);
+  overflow-wrap: anywhere;
+}
+.couple__hashtag::before,
+.couple__hashtag::after {
+  content: '';
+  flex: none;
+  width: 6px;
+  height: 6px;
+  background: var(--gold);
+  transform: rotate(45deg);
+}
+
+/* ───────── Side by side with room for a taller clasp ───────── */
+@media (min-width: 640px) {
+  .couple__pair {
+    --couple-col: min(37vw, 18.75rem);
+    grid-template-columns: minmax(0, 18.75rem) clamp(4.5rem, 12vw, 8.5rem) minmax(0, 18.75rem);
+    grid-template-areas:
+      'groom-art joiner bride-art'
+      'groom-text . bride-text';
+    justify-content: center;
+    column-gap: clamp(0.5rem, 2vw, 1.5rem);
+    row-gap: 1rem;
+    max-width: none;
+  }
+  .couple .couple__flowers { width: 46%; }
+  .couple__portrait--groom .couple__flowers { left: -9%; }
+  .couple__portrait--bride .couple__flowers { right: -9%; }
+  .couple .couple__placeholder-label { bottom: 9.5%; }
+  .couple__joiner { grid-area: joiner; gap: 0.7rem; margin-top: 12%; }
+  .couple .couple__joiner-lotus { display: block; width: clamp(2.6rem, 6vw, 3.6rem); height: auto; }
+  .couple__joiner-drop {
+    display: block;
+    width: 1px;
+    height: clamp(1.5rem, 4vw, 2.75rem);
+    background: linear-gradient(180deg, var(--gold), rgba(201, 164, 92, 0));
+  }
+  .couple__amp { position: relative; width: clamp(3.25rem, 7vw, 4.25rem); height: clamp(3.25rem, 7vw, 4.25rem); }
+  .couple .couple__amp-glyph { font-size: clamp(1.9rem, 4vw, 2.5rem); }
+  /* fine gold threads reaching towards each arch */
+  .couple__amp::before,
+  .couple__amp::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: clamp(0.75rem, 2.4vw, 2rem);
+    height: 1px;
+    background: linear-gradient(90deg, var(--gold), rgba(201, 164, 92, 0));
+  }
+  .couple__amp::before { right: calc(100% + 7px); transform: scaleX(-1); }
+  .couple__amp::after { left: calc(100% + 7px); }
+}

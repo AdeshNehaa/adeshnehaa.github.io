@@ -1,0 +1,201 @@
+/* ═════════ Countdown (#countdown) — see src/sections/Countdown.jsx ═════════
+   Deep maroon brocade band with a scalloped gold trim, mandala watermarks
+   and four gold plaques counting down to the wedding.                      */
+
+.countdown {
+  --countdown-mandala: clamp(220px, 46vw, 560px);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  text-align: center;
+  color: var(--ivory);
+  background-color: var(--maroon-deep);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg fill='none' stroke='%23e6cf98' stroke-opacity='0.1' stroke-width='1'%3E%3Cpath d='M40 6c6 10 6 18 0 28-6-10-6-18 0-28zM40 46c6 10 6 18 0 28-6-10-6-18 0-28zM6 40c10-6 18-6 28 0-10 6-18 6-28 0zM46 40c10-6 18-6 28 0-10 6-18 6-28 0z'/%3E%3Ccircle cx='40' cy='40' r='3'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(ellipse 85% 70% at 50% 46%, rgba(156, 58, 69, 0.62) 0%, rgba(156, 58, 69, 0) 72%),
+    linear-gradient(180deg, var(--maroon-deep) 0%, var(--maroon) 48%, var(--maroon-deep) 100%);
+}
+
+/* Scalloped trim: the neighbouring sections' paper dips into the band, edged in gold. */
+.countdown::before,
+.countdown::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 14px;
+  background-repeat: repeat-x;
+  background-size: 28px 14px;
+  background-position: 50% 0;
+  pointer-events: none;
+}
+.countdown::before {
+  top: 0;
+  background-image: radial-gradient(circle at 14px 0, var(--cream) 11px, var(--gold) 11.5px, var(--gold) 12.8px, rgba(201, 164, 92, 0) 13.3px);
+}
+.countdown::after {
+  bottom: 0;
+  background-image: radial-gradient(circle at 14px 14px, var(--ivory) 11px, var(--gold) 11.5px, var(--gold) 12.8px, rgba(201, 164, 92, 0) 13.3px);
+}
+
+.countdown__defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* ───────── Mandala watermarks ───────── */
+.countdown__decor { position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.countdown .countdown__mandala {
+  position: absolute;
+  top: 50%;
+  width: var(--countdown-mandala);
+  height: auto;
+  margin-top: calc(var(--countdown-mandala) / -2);
+  opacity: 0.22;
+}
+.countdown .countdown__mandala--left { left: 0; transform: translateX(-46%); }
+.countdown .countdown__mandala--right { right: 0; transform: translateX(46%); }
+
+/* A [placeholder] from the config must stay readable on maroon. */
+.countdown .placeholder-text { color: inherit; }
+
+/* ───────── Tiles ───────── */
+.countdown__tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(8px, 2.4vw, 22px);
+  max-width: 41rem;
+  margin-inline: auto;
+}
+.countdown__tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(3px, 0.9vw, 9px);
+  aspect-ratio: 5 / 6;
+  min-height: 5.4rem;
+  padding: 0.75rem 0.25rem;
+}
+
+.countdown__frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 12px 16px rgba(0, 0, 0, 0.3));
+}
+.countdown__frame path,
+.countdown__frame circle { vector-effect: non-scaling-stroke; }
+.countdown__frame-plate { stroke-width: 1.4; }
+.countdown__frame-inner { fill: none; stroke: var(--gold-light); stroke-opacity: 0.42; stroke-width: 1; }
+.countdown__frame-gems { fill: var(--gold-light); }
+
+.countdown__value {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: clamp(1.9rem, 0.9rem + 4.6vw, 4rem);
+  font-variant-numeric: lining-nums tabular-nums;
+  line-height: 1;
+  color: var(--gold-light);
+}
+.countdown__value--long { font-size: clamp(1.6rem, 0.8rem + 3.8vw, 3.4rem); }
+
+/* Every digit owns a fixed-width cell, so the layout never shifts. */
+.countdown__digit { position: relative; display: block; width: 0.6em; height: 1em; }
+.countdown__numeral { display: block; text-align: center; color: var(--gold-light); }
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .countdown__numeral {
+    background: linear-gradient(180deg, var(--ivory) 10%, var(--gold-light) 50%, var(--gold) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
+.countdown__numeral--in { animation: countdown-in 0.45s var(--ease) both; }
+.countdown__numeral--out { position: absolute; top: 0; right: 0; bottom: 0; left: 0; animation: countdown-out 0.45s var(--ease) both; }
+
+.countdown__label {
+  position: relative;
+  font-family: var(--font-display);
+  font-size: clamp(0.66rem, 0.5rem + 0.7vw, 0.86rem);
+  letter-spacing: 0.14em;
+  text-indent: 0.14em; /* optically re-centre letter-spaced text */
+  text-transform: uppercase;
+  line-height: 1.2;
+  color: var(--gold-light);
+}
+
+/* ───────── Date beneath the tiles ───────── */
+.countdown__when {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: clamp(1.5rem, 1.1rem + 2vw, 2.6rem);
+}
+.countdown .countdown__when-lotus {
+  width: clamp(2.5rem, 2rem + 2vw, 3.4rem);
+  height: auto;
+  margin-bottom: 0.7rem;
+  opacity: 0.9;
+}
+.countdown__date {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(0.86rem, 0.72rem + 0.62vw, 1.22rem);
+  letter-spacing: 0.14em;
+  text-indent: 0.14em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  color: var(--ivory);
+}
+.countdown__time {
+  margin: 0.35rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(0.8rem, 0.72rem + 0.36vw, 1rem);
+  letter-spacing: 0.26em;
+  text-indent: 0.26em;
+  text-transform: uppercase;
+  color: var(--gold-light);
+}
+
+/* ───────── After the moment has arrived ───────── */
+.countdown__done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+.countdown__done-line {
+  margin: 0;
+  font-family: var(--font-script);
+  font-size: clamp(2.5rem, 1.7rem + 4vw, 4.4rem);
+  line-height: 1.15;
+  text-wrap: balance;
+  color: var(--gold-light);
+}
+.countdown__done-note { margin: 0; max-width: 40ch; color: var(--ivory); text-wrap: balance; }
+
+/* Phones: four narrow tiles — ease the label tracking so it clears the inner line. */
+@media (max-width: 479px) {
+  .countdown__label { letter-spacing: 0.08em; text-indent: 0.08em; }
+}
+
+/* ───────── Very small phones: two by two, with room to read ───────── */
+@media (max-width: 359px) {
+  .countdown__tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; max-width: 15.5rem; }
+  .countdown__value { font-size: 2.7rem; }
+  .countdown__value--long { font-size: 2.3rem; }
+  .countdown__label { font-size: 0.74rem; letter-spacing: 0.2em; text-indent: 0.2em; }
+}
+
+@keyframes countdown-in {
+  from { opacity: 0; transform: translateY(-0.3em); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes countdown-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(0.3em); }
+}

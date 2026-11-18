@@ -1,0 +1,29 @@
+/* Shared floral artwork — see src/components/Florals.jsx */
+.floral { display: block; flex: none; pointer-events: none; user-select: none; }
+
+.floral-spray { transform-origin: center; }
+
+.floral-garland {
+  width: 100%;
+  height: clamp(58px, 11vw, 100px);
+}
+
+/* Falling petals: place inside a `position: relative` container about one screen tall */
+.petals { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.petals__petal {
+  position: absolute;
+  top: -6%;
+  border-radius: 0 100% 0 100%;
+  opacity: 0.8;
+  animation: petal-fall linear infinite;
+  will-change: transform;
+}
+.petals__petal--0 { background: linear-gradient(135deg, #f7b90f, #ee820c); }
+.petals__petal--1 { background: linear-gradient(135deg, #f9cf4a, #f2b705); }
+.petals__petal--2 { background: linear-gradient(135deg, #c96a73, #9c3a45); opacity: 0.6; }
+
+@keyframes petal-fall {
+  0% { transform: translate3d(0, -10vh, 0) rotate(0deg); }
+  50% { transform: translate3d(36px, 50vh, 0) rotate(200deg); }
+  100% { transform: translate3d(-12px, 112vh, 0) rotate(420deg); }
+}

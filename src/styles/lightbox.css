@@ -1,0 +1,345 @@
+/* ═════════ Lightbox — full-screen photo viewer (layer 500) ═════════
+   The photo is sized from the viewport alone (--lightbox-max-w / -h), so nothing
+   jumps while it loads and the controls always stay on screen — down to 320px
+   wide, in landscape, and inside the safe-area insets of notched phones. */
+
+/* page scroll lock (owned by the lightbox; App.jsx owns body.is-locked) */
+body.lightbox-open {
+  overflow: hidden;
+  padding-right: var(--lightbox-scrollbar, 0px);
+}
+
+.lightbox {
+  --lightbox-vh: 100vh;
+  --lightbox-btn: 48px;
+  --lightbox-gap: 10px;
+  --lightbox-pad-top: max(10px, env(safe-area-inset-top, 0px));
+  --lightbox-pad-right: max(10px, env(safe-area-inset-right, 0px));
+  --lightbox-pad-bottom: max(14px, env(safe-area-inset-bottom, 0px));
+  --lightbox-pad-left: max(10px, env(safe-area-inset-left, 0px));
+  --lightbox-caption: 5.2rem; /* room kept for the caption (up to three lines) */
+  /* everything that is not the photo: two rows of buttons on phones … */
+  --lightbox-chrome-y: calc(var(--lightbox-pad-top) + var(--lightbox-pad-bottom) + 2 * var(--lightbox-btn) + 2 * var(--lightbox-gap) + var(--lightbox-caption));
+  --lightbox-chrome-x: calc(var(--lightbox-pad-left) + var(--lightbox-pad-right));
+  --lightbox-max-w: calc(100vw - var(--lightbox-chrome-x));
+  --lightbox-max-h: calc(var(--lightbox-vh) - var(--lightbox-chrome-y));
+
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 500;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-rows: var(--lightbox-btn) minmax(0, 1fr) var(--lightbox-btn);
+  grid-template-areas:
+    '.     .     close'
+    'stage stage stage'
+    'prev  count next';
+  gap: var(--lightbox-gap);
+  padding: var(--lightbox-pad-top) var(--lightbox-pad-right) var(--lightbox-pad-bottom) var(--lightbox-pad-left);
+  /* dark maroon, translucent: --maroon-deep under a veil of black, with a warm glow behind the photo */
+  background:
+    radial-gradient(ellipse 85% 60% at 50% 46%, rgba(122, 31, 43, 0.55), rgba(122, 31, 43, 0) 72%),
+    linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+    rgba(90, 19, 32, 0.94);
+  color: var(--ivory);
+  outline: none;
+  overscroll-behavior: contain;
+  touch-action: pinch-zoom; /* one finger swipes between photos, two fingers still zoom */
+  -webkit-tap-highlight-color: transparent;
+  animation: lightbox-fade 0.3s var(--ease);
+}
+@supports (height: 100dvh) {
+  .lightbox { --lightbox-vh: 100dvh; }
+}
+/* zoomed in with two fingers: let one finger pan around the photo */
+.lightbox--zoomed { touch-action: auto; }
+
+/* ───────── Controls ───────── */
+.lightbox__btn {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: var(--lightbox-btn);
+  height: var(--lightbox-btn);
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(230, 207, 152, 0.65);
+  border-radius: 50%;
+  background: rgba(90, 19, 32, 0.6);
+  color: var(--ivory);
+  touch-action: manipulation;
+  transition: transform 0.25s var(--ease);
+}
+.lightbox__btn:active { transform: scale(0.94); }
+.lightbox .lightbox__btn:focus-visible {
+  outline: 2px solid var(--gold-light);
+  outline-offset: 3px;
+  border-radius: 50%;
+}
+@media (hover: hover) {
+  .lightbox__btn:hover {
+    background: var(--gold-light);
+    border-color: var(--gold-light);
+    color: var(--maroon-deep);
+    transform: scale(1.06);
+  }
+}
+.lightbox__close { grid-area: close; justify-self: end; }
+.lightbox__nav--prev { grid-area: prev; justify-self: end; }
+.lightbox__nav--next { grid-area: next; justify-self: start; }
+
+.lightbox__counter {
+  grid-area: count;
+  place-self: center;
+  min-width: 5.2em;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-align: center;
+  white-space: nowrap;
+  color: var(--gold-light);
+}
+.lightbox__counter-sep { opacity: 0.7; }
+
+/* ───────── Stage ───────── */
+.lightbox__stage {
+  grid-area: stage;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  transition: transform 0.3s var(--ease); /* snap back after an unfinished swipe */
+}
+.lightbox__figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  animation: lightbox-zoom 0.34s var(--ease);
+}
+.lightbox__figure--next { animation-name: lightbox-next; }
+.lightbox__figure--prev { animation-name: lightbox-prev; }
+
+.lightbox__media { position: relative; display: grid; place-items: center; }
+.lightbox__media--loading { min-width: 140px; min-height: 140px; }
+
+.lightbox__img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: var(--lightbox-max-w);
+  max-height: var(--lightbox-max-h);
+  border: 1px solid rgba(230, 207, 152, 0.7);
+  border-radius: 10px;
+  box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.8);
+  -webkit-user-select: none;
+  user-select: none;
+  transition: opacity 0.4s var(--ease);
+}
+.lightbox__media--loading .lightbox__img { opacity: 0; }
+.lightbox__loader {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+}
+.lightbox__loader svg { animation: lightbox-spin 7s linear infinite; }
+
+.lightbox__caption {
+  max-width: min(var(--lightbox-max-w), 46ch);
+  margin: 0;
+  font-style: italic;
+  font-size: 1.05rem;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--ivory);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+/* ───────── Enlarged ornamental placeholder (no photograph yet) ─────────
+   Every ornament is a fraction of --lightbox-card, so the card keeps its
+   proportions from a 320px phone held sideways up to a desktop. */
+.lightbox .lightbox__placeholder {
+  --lightbox-card: min(var(--lightbox-max-w), 440px, calc(var(--lightbox-max-h) * 0.8));
+  --lightbox-disc: calc(var(--lightbox-card) * 0.25);
+  width: var(--lightbox-card);
+  height: calc(var(--lightbox-card) * 1.25);
+  overflow: hidden;
+  border-radius: clamp(12px, calc(var(--lightbox-card) * 0.05), 22px);
+  background: radial-gradient(circle at 50% 50%, var(--ivory) 0%, var(--cream) 62%, var(--cream-deep) 100%);
+  box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.8);
+}
+.lightbox .lightbox__placeholder::before {
+  --lightbox-inset: calc(var(--lightbox-card) * 0.022);
+  inset: var(--lightbox-inset);
+  top: var(--lightbox-inset);
+  right: var(--lightbox-inset);
+  bottom: var(--lightbox-inset);
+  left: var(--lightbox-inset);
+  z-index: 1;
+  border-radius: clamp(8px, calc(var(--lightbox-card) * 0.034), 15px);
+}
+.lightbox__art {
+  position: absolute;
+  top: 50%;
+  left: 8%;
+  display: block;
+  width: 84%;
+  height: calc(var(--lightbox-card) * 0.84);
+  margin-top: calc(var(--lightbox-card) * -0.42);
+  opacity: 0.8;
+}
+.lightbox .lightbox__mandala { display: block; width: 100%; height: 100%; }
+.lightbox__mandala circle,
+.lightbox__mandala path { vector-effect: non-scaling-stroke; stroke-width: 1px; }
+.lightbox__number {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: var(--lightbox-disc);
+  height: var(--lightbox-disc);
+  margin: calc(var(--lightbox-disc) / -2) 0 0 calc(var(--lightbox-disc) / -2);
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+  background: var(--ivory);
+  box-shadow:
+    0 0 0 calc(var(--lightbox-disc) * 0.06) rgba(253, 248, 239, 0.75),
+    0 0 0 calc(var(--lightbox-disc) * 0.06 + 1px) rgba(201, 164, 92, 0.45),
+    0 14px 30px -14px rgba(90, 19, 32, 0.55);
+  font-family: var(--font-display);
+  font-size: calc(var(--lightbox-disc) * 0.36);
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: var(--maroon);
+}
+.lightbox .lightbox__corner {
+  --lightbox-corner-gap: calc(var(--lightbox-card) * 0.042);
+  position: absolute;
+  z-index: 1;
+  width: calc(var(--lightbox-card) * 0.125);
+  height: calc(var(--lightbox-card) * 0.125);
+  opacity: 0.9;
+}
+.lightbox .lightbox__corner--tl { top: var(--lightbox-corner-gap); left: var(--lightbox-corner-gap); }
+.lightbox .lightbox__corner--tr { top: var(--lightbox-corner-gap); right: var(--lightbox-corner-gap); }
+.lightbox .lightbox__corner--bl { bottom: var(--lightbox-corner-gap); left: var(--lightbox-corner-gap); }
+.lightbox .lightbox__corner--br { bottom: var(--lightbox-corner-gap); right: var(--lightbox-corner-gap); }
+/* a lotus above and below the medallion */
+.lightbox .lightbox__lotus {
+  position: absolute;
+  left: 50%;
+  z-index: 1;
+  width: calc(var(--lightbox-card) * 0.13);
+  height: calc(var(--lightbox-card) * 0.0988);
+  margin-left: calc(var(--lightbox-card) * -0.065);
+}
+.lightbox .lightbox__lotus--top { top: calc(var(--lightbox-card) * 0.058); transform: rotate(180deg); }
+.lightbox .lightbox__lotus--bottom { bottom: calc(var(--lightbox-card) * 0.058); }
+
+/* ───────── One photo only: no paging row ───────── */
+.lightbox--single {
+  --lightbox-chrome-y: calc(var(--lightbox-pad-top) + var(--lightbox-pad-bottom) + var(--lightbox-btn) + var(--lightbox-gap) + var(--lightbox-caption));
+  grid-template-rows: var(--lightbox-btn) minmax(0, 1fr);
+  grid-template-areas:
+    'count .     close'
+    'stage stage stage';
+}
+.lightbox--single .lightbox__counter > [aria-hidden] { display: none; }
+
+/* ───────── Tablets, desktops and phones held sideways: arrows beside the photo ───────── */
+@media (min-width: 768px), (orientation: landscape) and (max-height: 520px) {
+  .lightbox {
+    --lightbox-chrome-y: calc(var(--lightbox-pad-top) + var(--lightbox-pad-bottom) + var(--lightbox-btn) + var(--lightbox-gap) + var(--lightbox-caption));
+    --lightbox-chrome-x: calc(var(--lightbox-pad-left) + var(--lightbox-pad-right) + 2 * var(--lightbox-btn) + 2 * var(--lightbox-gap));
+    grid-template-columns: var(--lightbox-btn) minmax(0, 1fr) var(--lightbox-btn);
+    grid-template-rows: var(--lightbox-btn) minmax(0, 1fr);
+    grid-template-areas:
+      'count .     close'
+      'prev  stage next';
+  }
+  .lightbox__counter { justify-self: start; min-width: 0; padding-left: 0.4em; }
+  .lightbox__nav--prev,
+  .lightbox__nav--next { place-self: center; }
+}
+@media (min-width: 768px) {
+  .lightbox {
+    --lightbox-btn: 54px;
+    --lightbox-gap: 20px;
+    --lightbox-pad-top: max(20px, env(safe-area-inset-top, 0px));
+    --lightbox-pad-right: max(24px, env(safe-area-inset-right, 0px));
+    --lightbox-pad-bottom: max(24px, env(safe-area-inset-bottom, 0px));
+    --lightbox-pad-left: max(24px, env(safe-area-inset-left, 0px));
+  }
+  .lightbox .lightbox__placeholder { --lightbox-card: min(var(--lightbox-max-w), 480px, calc(var(--lightbox-max-h) * 0.8)); }
+  .lightbox__caption { font-size: 1.15rem; }
+}
+/* a phone held sideways has very little height: the photo takes all of it,
+   and Close / the counter float in the corners beside it */
+@media (orientation: landscape) and (max-height: 520px) {
+  .lightbox {
+    --lightbox-btn: 46px;
+    --lightbox-gap: 10px;
+    --lightbox-caption: 3.4rem;
+    --lightbox-pad-top: max(10px, env(safe-area-inset-top, 0px));
+    --lightbox-pad-right: max(10px, env(safe-area-inset-right, 0px));
+    --lightbox-pad-bottom: max(10px, env(safe-area-inset-bottom, 0px));
+    --lightbox-pad-left: max(10px, env(safe-area-inset-left, 0px));
+    --lightbox-chrome-y: calc(var(--lightbox-pad-top) + var(--lightbox-pad-bottom) + var(--lightbox-caption));
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-areas: 'prev stage next';
+  }
+  .lightbox__close {
+    position: absolute;
+    top: var(--lightbox-pad-top);
+    right: var(--lightbox-pad-right);
+  }
+  .lightbox__counter {
+    position: absolute;
+    top: calc(var(--lightbox-pad-top) + 15px);
+    left: var(--lightbox-pad-left);
+  }
+  .lightbox__figure { gap: 8px; }
+  .lightbox__caption { font-size: 1rem; -webkit-line-clamp: 2; }
+}
+
+/* ───────── Motion ───────── */
+.lightbox--closing {
+  pointer-events: none;
+  animation: lightbox-leave 0.2s ease forwards;
+}
+.lightbox--closing .lightbox__figure { animation: lightbox-shrink 0.2s ease forwards; }
+
+@keyframes lightbox-fade { from { opacity: 0; } }
+@keyframes lightbox-zoom { from { opacity: 0; transform: scale(0.94); } }
+@keyframes lightbox-next { from { opacity: 0; transform: translate3d(40px, 0, 0); } }
+@keyframes lightbox-prev { from { opacity: 0; transform: translate3d(-40px, 0, 0); } }
+@keyframes lightbox-leave { to { opacity: 0; } }
+@keyframes lightbox-shrink { to { opacity: 0; transform: scale(0.96); } }
+@keyframes lightbox-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .lightbox,
+  .lightbox__figure,
+  .lightbox--closing,
+  .lightbox--closing .lightbox__figure,
+  .lightbox__loader svg { animation: none; }
+  .lightbox__stage,
+  .lightbox__btn,
+  .lightbox__img { transition: none; }
+}

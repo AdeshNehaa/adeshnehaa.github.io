@@ -1,0 +1,309 @@
+/* ═════════ Navbar — see src/components/Navbar.jsx ═════════
+   Fixed bar, var(--nav-h) tall. Transparent over the hero; once the page has
+   scrolled ~40px (.navbar--scrolled) it turns ivory with a blur, a gold
+   hairline and a soft shadow. Below 1024px the links live in a full-screen
+   menu (.navbar--open). Motion uses transform / opacity only.               */
+
+/* Scroll lock while the mobile menu is open (App owns `is-locked`; this one is ours). */
+body.nav-open { overflow: hidden; }
+
+/* 40px marker at the very top of the page; the bar turns solid when it leaves the viewport. */
+.navbar__sentinel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 40px;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: var(--nav-h);
+  color: var(--ink);
+}
+.navbar--open { z-index: 200; }
+
+/* The solid state is a separate layer so it can fade in with opacity alone
+   (and so its backdrop-filter does not trap the fixed mobile menu inside the bar). */
+.navbar__bg {
+  position: absolute;
+  inset: 0;
+  background: rgba(253, 248, 239, 0.88);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  backdrop-filter: blur(14px) saturate(1.15);
+  box-shadow: 0 10px 28px -18px rgba(90, 19, 32, 0.45);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s var(--ease);
+}
+.navbar__bg::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(201, 164, 92, 0), var(--gold) 16%, var(--gold) 84%, rgba(201, 164, 92, 0));
+}
+.navbar--scrolled .navbar__bg { opacity: 1; }
+
+.navbar__bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  max-width: 1280px;
+  margin-inline: auto;
+  padding-left: max(14px, env(safe-area-inset-left, 0px));
+  padding-right: max(14px, env(safe-area-inset-right, 0px));
+}
+
+/* ───────── Monogram ───────── */
+.navbar__brand {
+  position: relative;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.2rem 0.4rem 0;
+  font-family: var(--font-script);
+  font-size: 2rem;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  color: var(--maroon);
+}
+.navbar__brand-mark { display: inline-flex; align-items: baseline; }
+.navbar__brand-amp { margin-inline: 0.14em 0.1em; font-size: 0.6em; color: var(--gold-deep); }
+
+/* ───────── Hamburger ───────── */
+.navbar__toggle {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 46px;
+  height: 46px;
+  margin-left: auto;
+  padding: 0;
+  border: 1px solid rgba(201, 164, 92, 0.8);
+  border-radius: 50%;
+  background: rgba(253, 248, 239, 0.78);
+  color: var(--maroon);
+  -webkit-tap-highlight-color: transparent;
+}
+.navbar__toggle:focus-visible { border-radius: 50%; }
+.navbar__toggle-icon {
+  grid-area: 1 / 1;
+  transition: opacity 0.3s var(--ease), transform 0.45s var(--ease);
+}
+.navbar__toggle-icon--close { opacity: 0; transform: rotate(-90deg) scale(0.6); }
+.navbar--open .navbar__toggle-icon--menu { opacity: 0; transform: rotate(90deg) scale(0.6); }
+.navbar--open .navbar__toggle-icon--close { opacity: 1; transform: none; }
+
+/* ───────── Links (shared by both layouts) ───────── */
+.navbar__list {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.navbar__link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+/* Underline: a gold hairline that grows from the centre, with a small diamond on the current section. */
+.navbar__link::before,
+.navbar__link::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  transition: transform 0.45s var(--ease), opacity 0.45s var(--ease);
+}
+.navbar__link::after {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(168, 130, 58, 0), var(--gold-deep) 22%, var(--gold-deep) 78%, rgba(168, 130, 58, 0));
+  transform: scaleX(0);
+}
+.navbar__link::before {
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  margin-left: -2.5px;
+  background: var(--gold-deep);
+  opacity: 0;
+  transform: rotate(45deg) scale(0);
+}
+.navbar__link[aria-current]::after { transform: scaleX(1); }
+.navbar__link[aria-current]::before { opacity: 1; transform: rotate(45deg); }
+@media (hover: hover) {
+  .navbar__link:hover::after { transform: scaleX(1); }
+}
+
+/* ═════════ Below 1024px: hamburger + full-screen menu ═════════ */
+@media (max-width: 1023.98px) {
+  .navbar__menu {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding:
+      calc(var(--nav-h) + clamp(0.25rem, 2.2vh, 1.5rem))
+      max(20px, env(safe-area-inset-right, 0px))
+      max(1.1rem, env(safe-area-inset-bottom, 0px))
+      max(20px, env(safe-area-inset-left, 0px));
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background:
+      radial-gradient(ellipse 90% 60% at 50% 42%, rgba(253, 248, 239, 1) 0%, rgba(253, 248, 239, 0.82) 45%, rgba(253, 248, 239, 0) 85%),
+      var(--cream);
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.35s var(--ease), visibility 0s linear 0.35s;
+  }
+  .navbar--open .navbar__menu { visibility: visible; opacity: 1; transition-delay: 0s; }
+
+  /* A touch of ornament: the shared pattern, a mandala watermark and two bouquets. */
+  .navbar__art { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .navbar__pattern {
+    position: absolute;
+    inset: 0;
+    -webkit-mask-image: radial-gradient(ellipse 75% 55% at 50% 45%, rgba(0, 0, 0, 0.1) 30%, #000 100%);
+    mask-image: radial-gradient(ellipse 75% 55% at 50% 45%, rgba(0, 0, 0, 0.1) 30%, #000 100%);
+  }
+  .navbar__pattern.section--pattern { background-color: transparent; }
+  .navbar__mandala {
+    --navbar-mandala: min(128vw, 78vh, 640px);
+    position: absolute;
+    left: 50%;
+    top: 47%;
+    width: var(--navbar-mandala);
+    height: var(--navbar-mandala);
+    margin: calc(var(--navbar-mandala) / -2) 0 0 calc(var(--navbar-mandala) / -2);
+    opacity: 0.28;
+    transform: scale(0.9) rotate(-12deg);
+    transition: transform 1.2s var(--ease);
+  }
+  .navbar--open .navbar__mandala { transform: none; }
+  .navbar .navbar__mandala-art { display: block; width: 100%; height: 100%; }
+  .navbar__spray {
+    --navbar-spray: clamp(88px, min(32vw, 20vh), 190px);
+    position: absolute;
+    bottom: -3px;
+    width: var(--navbar-spray);
+    height: var(--navbar-spray);
+    opacity: 0;
+    transform: scale(0.7);
+    transition: opacity 0.6s var(--ease), transform 0.9s var(--ease);
+  }
+  .navbar__spray--bl { left: -3px; transform-origin: 0 100%; }
+  .navbar__spray--br { right: -3px; transform-origin: 100% 100%; }
+  .navbar--open .navbar__spray { opacity: 1; transform: none; transition-delay: 0.15s; }
+  .navbar .navbar__spray-art { width: 100%; height: 100%; }
+
+  .navbar__list {
+    position: relative;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(0rem, 0.9vh, 0.6rem);
+    width: 100%;
+    margin-block: auto;
+  }
+  .navbar__item {
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity 0.3s var(--ease), transform 0.3s var(--ease);
+  }
+  .navbar--open .navbar__item {
+    opacity: 1;
+    transform: none;
+    transition-duration: 0.6s;
+    transition-delay: calc(0.08s + var(--navbar-i, 0) * 0.045s);
+  }
+  .navbar__link {
+    min-width: 12rem;
+    min-height: clamp(44px, 7.2vh, 56px);
+    padding: 0.2rem 1.4rem;
+    font-size: clamp(1.02rem, 0.86rem + 1.1vw, 1.5rem);
+    letter-spacing: 0.26em;
+    color: var(--ink);
+  }
+  .navbar__link-text { margin-right: -0.26em; } /* re-centre letter-spaced text */
+  .navbar__link::after { left: 22%; right: 22%; bottom: 14%; }
+  .navbar__link::before { bottom: calc(14% - 2px); }
+  .navbar__link[aria-current] { color: var(--maroon); }
+
+  .navbar__foot {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 0.4rem;
+    opacity: 0;
+    transition: opacity 0.4s var(--ease);
+  }
+  .navbar--open .navbar__foot { opacity: 1; transition-duration: 0.8s; transition-delay: 0.45s; }
+  .navbar .navbar__foot-divider { display: block; width: clamp(150px, 44vw, 210px); height: auto; }
+  .navbar__foot-names {
+    margin: 0.15rem 0 0;
+    font-size: clamp(1.8rem, 7.4vw, 2.4rem);
+    line-height: 1.25;
+  }
+  .navbar__foot-amp { font-size: 0.7em; color: var(--gold-deep); }
+
+  /* Short screens: drop the sign-off; sideways phones: two columns of links. */
+  @media (max-height: 620px) {
+    .navbar__foot { display: none; }
+  }
+  @media (max-height: 520px) and (min-width: 480px) {
+    .navbar__list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 15rem));
+      justify-content: center;
+      gap: 0 1rem;
+    }
+    .navbar__item { display: flex; justify-content: center; }
+    .navbar__link { min-height: 44px; }
+  }
+}
+
+/* ═════════ 1024px and up: inline links ═════════ */
+@media (min-width: 1024px) {
+  .navbar__bar { padding-inline: max(28px, env(safe-area-inset-left, 0px)) max(28px, env(safe-area-inset-right, 0px)); }
+  .navbar__toggle,
+  .navbar__art,
+  .navbar__foot { display: none; }
+
+  .navbar__menu { position: relative; z-index: 3; margin-left: auto; }
+  .navbar__list { align-items: center; gap: clamp(0rem, -1.2rem + 2vw, 1.1rem); }
+  .navbar__link {
+    min-height: 44px;
+    padding: 0 0.75rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.2em;
+    color: var(--ink-soft);
+  }
+  .navbar__link-text { margin-right: -0.2em; }
+  .navbar__link::after { left: 0.75rem; right: 0.75rem; bottom: 7px; }
+  .navbar__link::before { bottom: 5px; }
+  .navbar__link:hover,
+  .navbar__link[aria-current] { color: var(--maroon); }
+}

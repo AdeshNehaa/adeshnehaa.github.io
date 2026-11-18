@@ -1,0 +1,594 @@
+/* ═════════ Welcome screen — see src/components/WelcomeScreen.jsx ═════════
+   A closed invitation card that fills the screen. The card is really two
+   doors (left + right half); each carries its half of the artwork, so when
+   the seal is pressed the whole card parts down the middle and swings open.
+
+   Stages (class on the root):  .welcome--loading → --welcome → --opening
+   Motion uses transform / opacity only. Every entrance ends in the readable
+   state, so reduced motion (collapsed in global.css) simply shows the card. */
+
+.welcome {
+  /* Fluid in both directions: fits a 320×568 phone and a 1920×1080 monitor. */
+  --welcome-garland-h: clamp(54px, min(11vw, 12.5vh), 100px);
+  --welcome-spray: clamp(92px, min(38vw, 18.5vh), 310px);
+  --welcome-mandala: min(124vw, 76vh, 800px);
+  --welcome-seal: clamp(64px, min(21vw, 12vh), 100px);
+  --welcome-loader: clamp(164px, 46vmin, 232px);
+  --welcome-frame: 10px;
+  --welcome-gap: clamp(0.4rem, 1.7vh, 1.1rem);
+  --welcome-pad-x: max(22px, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+  --welcome-pad-b: max(26px, env(safe-area-inset-bottom, 0px));
+
+  /* Opening choreography (WelcomeScreen.jsx keeps a fallback timer in step with these). */
+  --welcome-door-time: 1.5s;
+  --welcome-door-delay: 0.1s;
+
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1000;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--cream);
+  color: var(--ink);
+  line-height: 1.3;
+  overscroll-behavior: contain;
+  -webkit-tap-highlight-color: transparent;
+}
+@supports (height: 100dvh) {
+  .welcome { bottom: auto; height: 100dvh; }
+}
+.welcome:focus { outline: none; } /* focus rests on the dialog only while it loads */
+
+/* ───────── Behind the doors: warm light that spills through the opening ───────── */
+.welcome__glow {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: radial-gradient(ellipse 58% 72% at 50% 48%, var(--ivory) 0%, rgba(255, 243, 201, 0.94) 28%, rgba(230, 207, 152, 0.5) 62%, rgba(230, 207, 152, 0) 100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ───────── The doors ───────── */
+.welcome__doors {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  perspective: 150vw; /* relative to the width, so the swing looks the same on every screen */
+  perspective-origin: 50% 50%;
+  pointer-events: none;
+}
+
+/* Both doors are full-size layers anchored at the card's top-left corner, so their artwork is drawn
+   on the same pixel grid and meets cleanly at the seam; each shows only its own half. */
+.welcome__door {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 50%; /* hinged on the outer edge */
+  will-change: transform;
+}
+.welcome__door--right { transform-origin: 100% 50%; }
+
+.welcome__door-half {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 50%;
+  overflow: hidden;
+}
+/* The right half overlaps the seam by 1px so an odd-width screen never shows a hairline. */
+.welcome__door--right .welcome__door-half { left: calc(50% - 1px); right: 0; width: auto; }
+
+/* Each face is as wide as the whole card; its door shows one half of it. */
+.welcome__face {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 200%;
+  background:
+    radial-gradient(ellipse 80% 54% at 50% 45%, rgba(253, 248, 239, 1) 0%, rgba(253, 248, 239, 0.85) 40%, rgba(253, 248, 239, 0) 82%),
+    radial-gradient(ellipse 130% 100% at 50% 50%, rgba(239, 224, 194, 0) 52%, rgba(239, 224, 194, 0.8) 100%),
+    var(--cream);
+}
+.welcome__door--right .welcome__face { left: auto; right: 0; width: calc(200% - 2px); }
+
+/* The shared ornamental pattern, fading out behind the text. */
+.welcome__pattern {
+  position: absolute;
+  inset: 0;
+  -webkit-mask-image: radial-gradient(ellipse 70% 52% at 50% 45%, rgba(0, 0, 0, 0.12) 30%, #000 100%);
+  mask-image: radial-gradient(ellipse 70% 52% at 50% 45%, rgba(0, 0, 0, 0.12) 30%, #000 100%);
+}
+.welcome__pattern.section--pattern { background-color: transparent; }
+
+.welcome__frame {
+  position: absolute;
+  inset: var(--welcome-frame);
+  border: 1px solid rgba(201, 164, 92, 0.8);
+  border-radius: 3px;
+}
+.welcome__frame::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(201, 164, 92, 0.42);
+  border-radius: 1px;
+}
+
+.welcome__spray {
+  position: absolute;
+  width: var(--welcome-spray);
+  height: var(--welcome-spray);
+}
+.welcome .welcome__spray-art { width: 100%; height: 100%; }
+.welcome__spray--tl { top: calc(var(--welcome-garland-h) * 0.8); left: -3px; transform-origin: 0 0; }
+.welcome__spray--tr { top: calc(var(--welcome-garland-h) * 0.8); right: -3px; transform-origin: 100% 0; }
+.welcome__spray--bl { bottom: -3px; left: -3px; transform-origin: 0 100%; }
+.welcome__spray--br { bottom: -3px; right: -3px; transform-origin: 100% 100%; }
+
+.welcome .welcome__garland {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--welcome-garland-h);
+}
+
+/* The seal's twin: placed on each door the moment the invitation is opened (see Door in WelcomeScreen.jsx). */
+.welcome__door-seal {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  animation: welcome-seal-press 0.42s var(--ease) both;
+}
+
+/* Appear only while the doors swing: a shadow as each door turns, and its gilded edge. */
+.welcome__door-shade,
+.welcome__door-edge { position: absolute; top: 0; bottom: 0; opacity: 0; }
+.welcome__door-shade {
+  left: 0;
+  right: 0;
+  background: linear-gradient(90deg, rgba(59, 42, 34, 0.2), rgba(59, 42, 34, 0.02));
+}
+.welcome__door--right .welcome__door-shade { transform: scaleX(-1); }
+.welcome__door-edge {
+  right: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--gold-light), var(--gold) 30%, var(--gold-deep) 50%, var(--gold) 70%, var(--gold-light));
+}
+.welcome__door--right .welcome__door-edge { right: auto; left: 0; }
+
+/* ───────── Petals ───────── */
+.welcome__ambient {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  pointer-events: none;
+  animation: welcome-fade-in 2.4s ease both;
+}
+
+/* ───────── The card's text ───────── */
+.welcome__content {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  padding:
+    calc(var(--welcome-garland-h) * 0.9 + env(safe-area-inset-top, 0px))
+    var(--welcome-pad-x)
+    var(--welcome-pad-b);
+  overflow-x: hidden;
+  overflow-y: auto; /* a last resort for very short screens */
+  overscroll-behavior: contain;
+  text-align: center;
+}
+.welcome--loading .welcome__content { visibility: hidden; }
+
+.welcome__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 46rem;
+  margin: auto; /* centres, yet stays reachable if the content ever has to scroll */
+}
+
+.welcome__blessing {
+  margin: 0;
+  font-size: clamp(1.05rem, min(4.7vw, 2.9vh), 1.5rem);
+  line-height: 1.5;
+  letter-spacing: 0.03em;
+  color: var(--maroon);
+}
+
+.welcome__line {
+  margin: clamp(0.15rem, 0.7vh, 0.5rem) -0.26em 0 0; /* the negative margin re-centres letter-spaced text */
+  font-family: var(--font-display);
+  font-size: clamp(0.72rem, min(3.1vw, 1.85vh), 0.95rem);
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  text-wrap: balance;
+}
+
+.welcome__names-wrap {
+  position: relative;
+  width: 100%;
+  margin-top: var(--welcome-gap);
+}
+
+/* Mandala watermark, centred behind the names. */
+.welcome__watermark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: -1;
+  width: var(--welcome-mandala);
+  height: var(--welcome-mandala);
+  margin: calc(var(--welcome-mandala) / -2) 0 0 calc(var(--welcome-mandala) / -2);
+  opacity: 0.36;
+  pointer-events: none;
+}
+.welcome .welcome__watermark-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  animation: welcome-spin 220s linear infinite;
+}
+
+.welcome__names {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  font-family: var(--font-script);
+  font-size: clamp(3.25rem, min(17.5vw, 10.4vh), 6rem);
+  font-weight: 400;
+  line-height: 1.06;
+  color: var(--maroon);
+}
+.welcome__name { display: block; padding-inline: 0.14em; /* room for the script swashes */ }
+.welcome__amp {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.42em;
+  margin-block: -0.04em 0.04em;
+  font-size: 0.46em;
+  line-height: 1;
+  color: var(--gold-deep);
+}
+.welcome__amp::before,
+.welcome__amp::after {
+  content: '';
+  flex: none;
+  width: clamp(30px, 10vw, 62px);
+  height: 1px;
+  background: linear-gradient(90deg, rgba(201, 164, 92, 0), var(--gold));
+}
+.welcome__amp::after { transform: scaleX(-1); }
+
+.welcome__details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: clamp(0.3rem, 1.2vh, 0.8rem);
+}
+.welcome .welcome__divider {
+  display: block;
+  width: clamp(150px, 42vw, 220px);
+  height: auto;
+}
+.welcome__date {
+  margin: clamp(0.2rem, 0.9vh, 0.6rem) 0 0;
+  font-size: clamp(1.14rem, min(5vw, 2.9vh), 1.6rem);
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+}
+.welcome__date-part { display: inline-block; white-space: nowrap; } /* a narrow screen breaks between the parts */
+.welcome__venue {
+  margin: clamp(0.15rem, 0.6vh, 0.4rem) -0.22em 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(0.78rem, min(3.4vw, 2vh), 1rem);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--maroon);
+}
+
+/* ───────── "Open Invitation": a gold seal resting on its label ───────── */
+.welcome__open {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: clamp(0.9rem, 3.4vh, 2.3rem);
+  padding: 0;
+  border: 0;
+  background: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.welcome__seal {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: var(--welcome-seal);
+  height: var(--welcome-seal);
+}
+/* The gentle pulse: two rings breathing out from the seal. */
+.welcome__seal-ring {
+  position: absolute;
+  inset: 5%;
+  border: 1.5px solid var(--gold);
+  border-radius: 50%;
+  background: rgba(201, 164, 92, 0.14);
+  opacity: 0;
+  animation: welcome-pulse 3s cubic-bezier(0.2, 0.6, 0.35, 1) 1.6s infinite;
+}
+.welcome__seal-ring--late { animation-delay: 3.1s; }
+
+.welcome__seal-disc {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  animation: welcome-breathe 3s ease-in-out 1.6s infinite;
+}
+.welcome__seal-art {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 5px 7px rgba(90, 19, 32, 0.34)); /* follows the scalloped edge */
+}
+.welcome .welcome__seal-lotus { position: relative; width: 52%; height: auto; margin-top: -5%; }
+
+.welcome__open-label {
+  position: relative;
+  z-index: 1;
+  display: block;
+  min-width: 11rem;
+  max-width: calc(100vw - 2 * var(--welcome-pad-x));
+  margin-top: calc(var(--welcome-seal) * -0.2);
+  padding: calc(var(--welcome-seal) * 0.2 + 0.6rem) 1.4rem 0.7rem 1.6rem;
+  border: 1px solid var(--gold);
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--maroon) 0%, var(--maroon-deep) 100%);
+  box-shadow: inset 0 0 0 3px var(--maroon-deep), inset 0 0 0 4px rgba(201, 164, 92, 0.45), var(--shadow-soft);
+  font-family: var(--font-display);
+  font-size: clamp(0.8rem, 0.76rem + 0.2vw, 0.92rem);
+  line-height: 1.25;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ivory);
+}
+
+@media (hover: hover) {
+  .welcome__open:hover .welcome__open-label {
+    box-shadow: inset 0 0 0 3px var(--maroon-deep), inset 0 0 0 4px rgba(201, 164, 92, 0.75), 0 16px 34px -14px rgba(90, 19, 32, 0.6);
+  }
+}
+
+.welcome__open:focus-visible { outline: none; } /* the ring follows the label instead */
+.welcome__open:focus-visible .welcome__open-label { outline: 2px solid var(--maroon); outline-offset: 3px; }
+
+/* ───────── Stage 1: loader ───────── */
+.welcome__loader {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  transition: opacity 0.7s var(--ease), transform 1s var(--ease), visibility 0s linear 1s;
+}
+.welcome__loader-stack {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--welcome-loader);
+  height: var(--welcome-loader);
+  animation: welcome-loader-in 0.9s var(--ease) both;
+}
+.welcome__loader-halo {
+  position: absolute;
+  inset: 0;
+  animation: welcome-spin 18s linear infinite;
+}
+.welcome .welcome__loader-art { display: block; width: 100%; height: 100%; }
+.welcome__loader-orbit {
+  position: absolute;
+  top: -5%;
+  left: -5%;
+  width: 110%;
+  height: 110%;
+  animation: welcome-spin 3.6s linear infinite reverse;
+}
+.welcome__loader-medallion {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 45%;
+  height: 45%;
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 30%, var(--ivory) 0%, var(--ivory) 48%, var(--cream) 100%);
+  box-shadow: 0 0 0 4px var(--ivory), 0 0 0 5px rgba(201, 164, 92, 0.6), 0 14px 28px -14px rgba(90, 19, 32, 0.5);
+}
+.welcome__monogram {
+  display: flex;
+  align-items: baseline;
+  gap: 0.1em;
+  font-family: var(--font-script);
+  font-size: calc(var(--welcome-loader) * 0.16);
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--maroon);
+  opacity: 0;
+  transition: opacity 0.6s var(--ease);
+}
+.welcome__monogram--ready { opacity: 1; }
+.welcome__monogram-amp { font-size: 0.62em; color: var(--gold-deep); }
+
+/* ───────── Stage 1 → 2: the loader blooms into the watermark, the card dresses itself ───────── */
+.welcome--loading .welcome__garland,
+.welcome--loading .welcome__spray { opacity: 0; }
+
+.welcome:not(.welcome--loading) .welcome__loader { opacity: 0; visibility: hidden; transform: scale(1.7); }
+
+.welcome:not(.welcome--loading) .welcome__garland { animation: welcome-drop 1.15s var(--ease) both; }
+.welcome:not(.welcome--loading) .welcome__spray { animation: welcome-bloom 1.5s var(--ease) 0.15s both; }
+.welcome:not(.welcome--loading) .welcome__spray--bl,
+.welcome:not(.welcome--loading) .welcome__spray--br { animation-delay: 0.35s; }
+.welcome:not(.welcome--loading) .welcome__watermark { animation: welcome-halo 1.9s var(--ease) both; }
+.welcome:not(.welcome--loading) .welcome__item {
+  animation: welcome-rise 0.95s var(--ease) both;
+  animation-delay: calc(0.3s + var(--welcome-i, 0) * 0.11s);
+}
+
+/* ───────── Stage 3: the invitation opens ───────── */
+.welcome--opening { background: transparent; }
+
+.welcome--opening .welcome__content { pointer-events: none; animation: welcome-fade-out 0.5s var(--ease) both; }
+.welcome--opening .welcome__ambient { animation: welcome-fade-out 0.5s linear both; }
+.welcome--opening .welcome__seal-ring { animation: none; }
+.welcome--opening .welcome__seal-disc { animation: welcome-seal-release 0.55s var(--ease) both; }
+/* Usually the doors carry a twin of the seal (.welcome--split): the button's own seal then
+   moves in step with it while it fades, so the seal seems to stay and break along the seam. */
+.welcome--split .welcome__seal-disc { animation: welcome-seal-press 0.42s var(--ease) both; }
+
+.welcome--opening .welcome__glow {
+  animation: welcome-glow var(--welcome-door-time) linear var(--welcome-door-delay) both;
+}
+.welcome--opening .welcome__door--left {
+  animation: welcome-door-left var(--welcome-door-time) linear var(--welcome-door-delay) both;
+}
+.welcome--opening .welcome__door--right {
+  animation: welcome-door-right var(--welcome-door-time) linear var(--welcome-door-delay) both;
+}
+.welcome--opening .welcome__door-shade {
+  animation: welcome-fade-in var(--welcome-door-time) ease-in var(--welcome-door-delay) both;
+}
+.welcome--opening .welcome__door-edge { animation: welcome-fade-in 0.2s linear var(--welcome-door-delay) both; }
+
+/* ───────── Larger and shorter screens ───────── */
+/* A phone has no room for bouquets beside the opening lines unless it is tall: the garland dresses the top alone. */
+@media (max-width: 639.98px) and (max-height: 799.98px) {
+  .welcome__spray--tl,
+  .welcome__spray--tr { display: none; }
+}
+
+@media (min-width: 640px) {
+  .welcome { --welcome-spray: clamp(92px, min(30vw, 27vh), 310px); }
+}
+
+@media (min-width: 700px) {
+  .welcome { --welcome-frame: 16px; --welcome-pad-b: max(34px, env(safe-area-inset-bottom, 0px)); }
+  .welcome__frame::before { inset: 5px; }
+}
+
+/* Very short (a phone held sideways): every line earns its place. */
+@media (max-height: 480px) {
+  .welcome { --welcome-seal: 56px; --welcome-pad-b: max(14px, env(safe-area-inset-bottom, 0px)); }
+  .welcome .welcome__divider { display: none; }
+  .welcome__open { margin-top: 0.7rem; }
+}
+
+/* Names on one line: tablets, desktops, and any screen too short to stack them. */
+@media (min-width: 640px), (max-height: 540px) {
+  .welcome__names {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.2em;
+    font-size: clamp(2.9rem, min(11.5vw, 15vh), 8.25rem);
+    line-height: 1.2;
+  }
+  .welcome__name { padding-inline: 0.06em; }
+  .welcome__amp { margin: 0; font-size: 0.62em; }
+  .welcome__amp::before,
+  .welcome__amp::after { content: none; }
+}
+
+/* ───────── Motion ───────── */
+@keyframes welcome-spin { to { transform: rotate(360deg); } }
+@keyframes welcome-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes welcome-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes welcome-loader-in { from { opacity: 0; transform: scale(0.84); } to { opacity: 1; transform: none; } }
+@keyframes welcome-rise { from { opacity: 0; transform: translate3d(0, 18px, 0); } to { opacity: 1; transform: none; } }
+@keyframes welcome-drop { from { opacity: 0; transform: translate3d(0, -100%, 0); } to { opacity: 1; transform: none; } }
+@keyframes welcome-bloom { from { opacity: 0; transform: scale(0.58); } to { opacity: 1; transform: none; } }
+@keyframes welcome-halo { from { opacity: 0; transform: scale(0.42); } to { opacity: 0.36; transform: none; } }
+@keyframes welcome-pulse {
+  0% { opacity: 0.8; transform: scale(1); }
+  75%, 100% { opacity: 0; transform: scale(1.75); }
+}
+@keyframes welcome-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+@keyframes welcome-seal-press {
+  0% { transform: scale(1.03); }
+  40% { transform: scale(0.9); }
+  100% { transform: none; }
+}
+@keyframes welcome-seal-release {
+  0% { transform: scale(1); }
+  28% { transform: scale(0.88); }
+  100% { opacity: 0; transform: scale(1.4); }
+}
+/* The doors swing toward the guest, hinged on their outer edges: first they
+   unlatch (a crack of light), then they swing wide. With a 150vw perspective a
+   door has left the screen by ≈72°, so the swing ends just past that. */
+@keyframes welcome-door-left {
+  0% { transform: rotateY(0deg); animation-timing-function: cubic-bezier(0.3, 0.6, 0.4, 1); }
+  24% { transform: rotateY(-9deg); animation-timing-function: cubic-bezier(0.45, 0, 0.85, 0.8); }
+  100% { transform: rotateY(-78deg); }
+}
+@keyframes welcome-door-right {
+  0% { transform: rotateY(0deg); animation-timing-function: cubic-bezier(0.3, 0.6, 0.4, 1); }
+  24% { transform: rotateY(9deg); animation-timing-function: cubic-bezier(0.45, 0, 0.85, 0.8); }
+  100% { transform: rotateY(78deg); }
+}
+@keyframes welcome-glow {
+  0% { opacity: 1; transform: none; }
+  34% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.3); }
+}
+
+/* ───────── Reduced motion: the card is simply there, and opening is a quick fade ───────── */
+@media (prefers-reduced-motion: reduce) {
+  .welcome *,
+  .welcome *::before,
+  .welcome *::after { animation-delay: 0s !important; }
+
+  .welcome--opening .welcome__content,
+  .welcome--opening .welcome__ambient,
+  .welcome--opening .welcome__seal-disc,
+  .welcome--opening .welcome__glow,
+  .welcome--opening .welcome__door--left,
+  .welcome--opening .welcome__door--right,
+  .welcome--opening .welcome__door-shade,
+  .welcome--opening .welcome__door-edge { animation: none; }
+
+  /* The one deliberate exception to the global "no transitions" rule: a 220ms cross-fade. */
+  .welcome.welcome--opening {
+    background: var(--cream);
+    opacity: 0;
+    transition: opacity 220ms linear !important;
+  }
+}
