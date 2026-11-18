@@ -42,9 +42,10 @@ export const getWatchUrl = (id) => `https://www.youtube.com/watch?v=${id}`;
 
 /* ───────── Shared state ─────────
  * status   idle     nothing loaded yet
- *          loading  the visitor pressed play; the player is starting
+ *          loading  the player is starting. YouTube may be showing an advertisement first:
+ *                   it does not tell the page about those, so this can last a while.
  *          playing  ·  paused
- *          blocked  the browser wants a tap on the video itself (some phones)
+ *          blocked  the browser reported that it wants a tap on the video itself (some phones)
  *          error    the video could not be loaded or played
  */
 let state = { status: 'idle', muted: false, volume: 60, error: 0 };
@@ -58,7 +59,6 @@ let mount = null; // the element the player is created in (registered by the son
 let videoId = '';
 let player = null;
 let apiPromise = null;
-let watchdog = 0;
 let selfStarted = false; // the song starts by itself at most once per visit
 
 const ready = () => player && typeof player.playVideo === 'function';
@@ -93,7 +93,6 @@ function loadApi() {
 }
 
 function removePlayer() {
-  window.clearTimeout(watchdog);
   if (player) quietly(() => player.destroy());
   player = null;
   if (mount) mount.replaceChildren();
@@ -123,27 +122,18 @@ function createPlayer(YT) {
           if (state.muted) event.target.mute();
           event.target.playVideo();
         });
-        // Some phones only start sound after a tap on the video itself.
-        watchdog = window.setTimeout(() => {
-          if (state.status === 'loading') set({ status: 'blocked' });
-        }, 3500);
       },
       onStateChange: (event) => {
         const { PLAYING, PAUSED, BUFFERING, ENDED } = YT.PlayerState;
         if (event.data === PLAYING) {
-          window.clearTimeout(watchdog);
           set({ status: 'playing', error: 0 });
         } else if (event.data === PAUSED || event.data === ENDED) {
-          window.clearTimeout(watchdog);
           set({ status: 'paused' });
         } else if (event.data === BUFFERING && state.status !== 'playing') {
           set({ status: 'loading' });
         }
       },
-      onAutoplayBlocked: () => {
-        window.clearTimeout(watchdog);
-        set({ status: 'blocked' });
-      },
+      onAutoplayBlocked: () => set({ status: 'blocked' }),
       onError: (event) => {
         removePlayer();
         set({ status: 'error', error: Number(event.data) || 1 });

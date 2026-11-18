@@ -176,7 +176,8 @@ export const wedding = {
 
   // Music
   //   youtube    a YouTube link. The official YouTube player appears in the "Our Song" card on
-  //              the page (the video is visible, and YouTube may show ads).
+  //              the page. The video is visible, and on the published site YouTube usually
+  //              plays an advertisement before the song (it does not on a local preview).
   //   src        OR an audio file you have the right to use: put an mp3 in /public/music/ and
   //              set e.g. 'music/our-song.mp3'. It then plays as background music with no video.
   //              If both are empty, the music button shows a "music will be added soon" note.
@@ -186,10 +187,12 @@ export const wedding = {
   //              · a YouTube video starts when the song card scrolls onto the screen (YouTube
   //                only allows a video to start by itself while it is visible), and on
   //                iPhones the guest still has to tap the video once.
+  //              Keep it false with YouTube: what starts by itself is YouTube's advertisement,
+  //              not the song. With an audio file there are no advertisements.
   //   show       set to false to remove the music button and the song card completely.
   music: {
     show: true,
-    autoStart: true,
+    autoStart: false,
     title: 'Tu Hain Toh',
     credit: 'From the film Mr. & Mrs. Mahi',
     youtube: 'https://www.youtube.com/watch?v=TVbI55pDdaI',

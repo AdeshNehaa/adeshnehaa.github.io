@@ -100,7 +100,9 @@ music: {
 }
 ```
 
-The official YouTube player appears in the "Our Song" card after the couple's introduction. The video is visible and YouTube may show ads before it. Nothing is loaded from YouTube until the song starts.
+The official YouTube player appears in the "Our Song" card after the couple's introduction. Nothing is loaded from YouTube until the song starts.
+
+On the published site YouTube usually plays an advertisement before the song. Guests can skip it on the video, but the site cannot remove it or choose what it is. (A local preview shows no advertisements, so this only appears once the site is online.)
 
 **An audio file**
 
@@ -117,6 +119,8 @@ No browser lets a page make sound before the guest has tapped something, so musi
 | --- | --- |
 | Audio file | The moment the guest taps **Open Invitation**, on every phone and computer. |
 | YouTube | When the song card scrolls onto the screen. YouTube only allows a video to start by itself while it is visible. On iPhones the guest still has to tap the video once. |
+
+Keep `autoStart: false` while the source is YouTube (the current setting): what would start by itself is YouTube's advertisement, not the song. Use `autoStart: true` with an audio file.
 
 With `autoStart: false`, guests press play themselves. Either way they can pause from the music button at any time, and once they pause it, it does not start again by itself.
 

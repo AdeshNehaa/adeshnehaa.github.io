@@ -216,7 +216,7 @@ export default function MusicPlayer() {
         <p className="music-player__eyebrow">{isYouTube ? 'Our song' : 'Background music'}</p>
         <p className="music-player__title">{title}</p>
         <p className={`music-player__status${available ? '' : ' placeholder-text'}`} role="status">
-          {STATUS_TEXT[shown]}
+          {isYouTube && shown === 'loading' ? 'Starting on YouTube…' : STATUS_TEXT[shown]}
         </p>
 
         <div className="music-player__controls">

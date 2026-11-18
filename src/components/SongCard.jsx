@@ -1,4 +1,4 @@
-import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { ExternalLink, Play } from 'lucide-react';
 import { wedding } from '../config/wedding.js';
 import { song, parseYouTubeId, getWatchUrl } from '../utils/youtube.js';
@@ -30,6 +30,7 @@ export default function SongCard({ opened = true }) {
   const autoStart = enabled && music.autoStart === true;
 
   const { status } = useSyncExternalStore(song.subscribe, song.getState);
+  const [slow, setSlow] = useState(false); // still not playing a few seconds after it was started
   const mountRef = useRef(null);
   const stageRef = useRef(null);
   const posterHadFocus = useRef(false);
@@ -63,6 +64,17 @@ export default function SongCard({ opened = true }) {
       observer.disconnect();
     };
   }, [autoStart, opened]);
+
+  // YouTube does not tell the page when it plays an advertisement first, or (on some phones)
+  // when it is waiting for a tap. After a few seconds without music, say both plainly.
+  useEffect(() => {
+    if (status !== 'loading') {
+      setSlow(false);
+      return undefined;
+    }
+    const id = window.setTimeout(() => setSlow(true), 5000);
+    return () => window.clearTimeout(id);
+  }, [status]);
 
   // The poster button disappears once the player loads: keep keyboard focus on the stage.
   useEffect(() => {
@@ -133,7 +145,8 @@ export default function SongCard({ opened = true }) {
         </div>
 
         <p className="song__hint" role="status">
-          {status === 'blocked' && 'Tap the video once more to start the music.'}
+          {status === 'blocked' && 'Tap the video to start the music.'}
+          {status === 'loading' && slow && 'If the song has not started, tap the video. YouTube may show an advertisement first, which you can skip there.'}
         </p>
         <p className="song__note">Once it starts, the music keeps playing as you scroll.</p>
       </div>

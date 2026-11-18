@@ -133,5 +133,5 @@
   letter-spacing: 0.08em;
   color: var(--maroon);
 }
-.song__hint:not(:empty) { margin-top: 0.95rem; }
+.song__hint:not(:empty) { margin-top: 0.95rem; line-height: 1.5; text-wrap: balance; }
 .song__note { margin: 0.85rem 0 0; font-size: 0.95em; font-style: italic; color: var(--ink-soft); }
